@@ -21,7 +21,7 @@ router.get('/:id', authenticate, (req, res) => studentController.getStudentById(
 router.post(
   '/',
   authenticate,
-  authorizeRoles(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  authorizeRoles(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.FACULTY),
   validateRequest(createStudentSchema),
   (req, res) => studentController.createStudent(req, res)
 );

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { pool, query } from '../../config/db';
 import { hashPassword } from '../../utils/crypto';
 import { USER_ROLES, UserRole } from '../../config/constants';
@@ -125,25 +126,26 @@ export class StudentService {
       const defaultPassword = 'Student@123';
       const passwordHash = await hashPassword(defaultPassword);
       const studentEmail = `${input.rollNumber.toLowerCase()}@adcet.in`;
+      const userId = crypto.randomUUID();
+      const studentId = crypto.randomUUID();
 
-      const userRes = await client.query(
-        `INSERT INTO users (email, roll_number, password_hash, role, must_change_password)
-         VALUES ($1, $2, $3, $4, TRUE)
-         RETURNING id`,
-        [studentEmail, input.rollNumber, passwordHash, USER_ROLES.STUDENT]
+      await client.query(
+        `INSERT INTO users (id, email, roll_number, password_hash, role, must_change_password)
+         VALUES ($1, $2, $3, $4, $5, 1)`,
+        [userId, studentEmail, input.rollNumber, passwordHash, USER_ROLES.STUDENT]
       );
-      const userId = userRes.rows[0].id;
 
       const studentRes = await client.query(
         `INSERT INTO students (
-          user_id, roll_number, enrollment_number, first_name, last_name, full_name_marathi,
+          id, user_id, roll_number, enrollment_number, first_name, last_name, full_name_marathi,
           dob, gender, blood_group, personal_email, phone, guardian_name, guardian_phone,
           guardian_relation, guardian_consent_recorded, program_id, current_year,
           current_division, status
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
         ) RETURNING *`,
         [
+          studentId,
           userId,
           input.rollNumber,
           input.enrollmentNumber,
@@ -158,7 +160,7 @@ export class StudentService {
           input.guardianName,
           input.guardianPhone,
           input.guardianRelation,
-          input.guardianConsentRecorded,
+          input.guardianConsentRecorded ? 1 : 0,
           input.programId,
           input.currentYear,
           input.currentDivision,

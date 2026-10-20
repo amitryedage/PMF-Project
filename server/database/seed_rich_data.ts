@@ -249,5 +249,5 @@ export async function seed1200Students() {
 
 seed1200Students().catch((err) => {
   console.error('Failed to seed 1200 students:', err);
-  process.exit(1);
+  throw err;
 });
