@@ -3,6 +3,7 @@ import { pool, query } from '../../config/db';
 import { hashPassword } from '../../utils/crypto';
 import { USER_ROLES, UserRole } from '../../config/constants';
 import { TokenPayload } from '../../utils/token';
+import { logAuditEvent } from '../../utils/audit';
 import { CreateStudentInput, UpdateStudentInput, StudentQueryParams } from './student.schema';
 
 export class StudentService {
@@ -169,6 +170,23 @@ export class StudentService {
       );
 
       await client.query('COMMIT');
+
+      // Immutable security audit trail
+      await logAuditEvent({
+        action: 'CREATE_STUDENT',
+        entityType: 'STUDENT',
+        entityId: studentId,
+        newValues: {
+          rollNumber: input.rollNumber,
+          enrollmentNumber: input.enrollmentNumber,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          programId: input.programId,
+          year: input.currentYear,
+          division: input.currentDivision,
+        },
+      });
+
       return studentRes.rows[0];
     } catch (err) {
       await client.query('ROLLBACK');
@@ -256,6 +274,12 @@ export class StudentService {
         [userId]
       );
     }
+
+    await logAuditEvent({
+      action: 'SOFT_DELETE_STUDENT',
+      entityType: 'STUDENT',
+      entityId: id,
+    });
 
     return { id, message: 'Student soft-deleted successfully' };
   }

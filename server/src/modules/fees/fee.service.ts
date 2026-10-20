@@ -1,6 +1,7 @@
 import { pool, query } from '../../config/db';
 import { USER_ROLES, LEDGER_ENTRY_TYPE } from '../../config/constants';
 import { TokenPayload } from '../../utils/token';
+import { logAuditEvent } from '../../utils/audit';
 import { CreateFeeStructureInput, RecordPaymentInput, FeeAdjustmentInput } from './fee.schema';
 
 export class FeeService {
@@ -57,10 +58,26 @@ export class FeeService {
       await client.query('COMMIT');
 
       const entry = ledgerRes.rows[0];
+      const receiptCode = `REC/${input.financialYear}/${String(receiptNumber).padStart(6, '0')}`;
+
+      await logAuditEvent({
+        actorUserId: user.userId,
+        action: 'RECORD_FEE_PAYMENT',
+        entityType: 'FEE_PAYMENT',
+        entityId: entry.id,
+        newValues: {
+          studentId: input.studentId,
+          receiptCode,
+          amountPaise: input.amountPaise,
+          paymentMode: input.paymentMode,
+          financialYear: input.financialYear,
+        },
+      });
+
       return {
         ...entry,
         formattedAmountRupees: (parseInt(entry.amount_paise, 10) / 100).toFixed(2),
-        receiptCode: `REC/${input.financialYear}/${String(receiptNumber).padStart(6, '0')}`,
+        receiptCode,
       };
     } catch (err) {
       await client.query('ROLLBACK');

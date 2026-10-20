@@ -2,6 +2,7 @@ export type UserRole = 'STUDENT' | 'FACULTY' | 'ADMIN' | 'ACCOUNTS' | 'SUPER_ADM
 
 export interface User {
   id: string;
+  student_id?: string;
   email: string;
   rollNumber?: string;
   role: UserRole;

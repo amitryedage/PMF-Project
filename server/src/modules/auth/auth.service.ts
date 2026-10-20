@@ -203,7 +203,7 @@ export class AuthService {
   async getCurrentUser(userId: string) {
     const userRes = await query(
       `SELECT u.id, u.email, u.roll_number, u.role, u.must_change_password,
-              s.first_name, s.last_name, s.current_year, s.current_division, s.status as student_status,
+              s.id as student_id, s.first_name, s.last_name, s.current_year, s.current_division, s.status as student_status,
               p.name as program_name, p.code as program_code
        FROM users u
        LEFT JOIN students s ON s.user_id = u.id AND s.deleted_at IS NULL

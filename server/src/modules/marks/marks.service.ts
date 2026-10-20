@@ -1,6 +1,7 @@
 import { pool, query } from '../../config/db';
 import { USER_ROLES } from '../../config/constants';
 import { TokenPayload } from '../../utils/token';
+import { logAuditEvent } from '../../utils/audit';
 import { CreateExamInput, SubmitMarksInput, ReviseMarkInput } from './marks.schema';
 
 const calculateGradeAndPoints = (percentage: number) => {
@@ -70,6 +71,14 @@ export class MarksService {
       }
 
       await client.query('COMMIT');
+
+      await logAuditEvent({
+        action: 'SUBMIT_EXAM_MARKS',
+        entityType: 'EXAM',
+        entityId: input.examId,
+        newValues: { totalRecords: input.records.length },
+      });
+
       return { message: 'Marks saved successfully', count: input.records.length };
     } catch (err) {
       await client.query('ROLLBACK');
@@ -143,6 +152,16 @@ export class MarksService {
       );
 
       await client.query('COMMIT');
+
+      await logAuditEvent({
+        actorUserId: user.userId,
+        action: 'REVISE_EXAM_MARK',
+        entityType: 'MARK',
+        entityId: mark.id,
+        oldValues: { score: mark.score, isAbsent: mark.is_absent },
+        newValues: { score: input.newScore, isAbsent: input.newAbsent, reason: input.reason },
+      });
+
       return updateRes.rows[0];
     } catch (err) {
       await client.query('ROLLBACK');
