@@ -6,6 +6,7 @@ import { env } from './config/env';
 import { checkDatabaseHealth } from './config/db';
 import { sendSuccess, sendError } from './utils/response';
 import { errorHandler } from './middlewares/error.middleware';
+import authRoutes from './modules/auth/auth.routes';
 
 export const createApp = (): Application => {
   const app = express();
@@ -29,6 +30,8 @@ export const createApp = (): Application => {
       database: isDbConnected ? 'CONNECTED' : 'DISCONNECTED',
     });
   });
+
+  app.use('/api/v1/auth', authRoutes);
 
   app.use((_req: Request, res: Response) => {
     return sendError(res, 'Route not found', 404);
