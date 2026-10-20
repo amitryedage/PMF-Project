@@ -10,6 +10,7 @@ import authRoutes from './modules/auth/auth.routes';
 import studentRoutes from './modules/students/student.routes';
 import attendanceRoutes from './modules/attendance/attendance.routes';
 import marksRoutes from './modules/marks/marks.routes';
+import feeRoutes from './modules/fees/fee.routes';
 
 export const createApp = (): Application => {
   const app = express();
@@ -38,6 +39,7 @@ export const createApp = (): Application => {
   app.use('/api/v1/students', studentRoutes);
   app.use('/api/v1/attendance', attendanceRoutes);
   app.use('/api/v1/marks', marksRoutes);
+  app.use('/api/v1/fees', feeRoutes);
 
   app.use((_req: Request, res: Response) => {
     return sendError(res, 'Route not found', 404);
