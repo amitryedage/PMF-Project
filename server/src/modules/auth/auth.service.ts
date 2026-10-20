@@ -67,11 +67,12 @@ export class AuthService {
     const refreshToken = signRefreshToken(tokenPayload);
     const refreshTokenHash = hashToken(refreshToken);
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const tokenId = crypto.randomUUID();
     await query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
-       VALUES ($1, $2, $3)`,
-      [user.id, refreshTokenHash, expiresAt]
+      `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at)
+       VALUES ($1, $2, $3, $4)`,
+      [tokenId, user.id, refreshTokenHash, expiresAt]
     );
 
     return {
@@ -138,11 +139,12 @@ export class AuthService {
     const newRefreshToken = signRefreshToken(tokenPayload);
     const newTokenHash = hashToken(newRefreshToken);
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const rotatedTokenId = crypto.randomUUID();
     await query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
-       VALUES ($1, $2, $3)`,
-      [payload.userId, newTokenHash, expiresAt]
+      `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at)
+       VALUES ($1, $2, $3, $4)`,
+      [rotatedTokenId, payload.userId, newTokenHash, expiresAt]
     );
 
     return {

@@ -12,15 +12,28 @@ const envSchema = z.object({
     .default('postgresql://postgres:postgres@localhost:5432/student_records'),
   JWT_ACCESS_SECRET: z
     .string()
-    .min(16)
+    .min(32, 'JWT_ACCESS_SECRET must be at least 32 characters')
     .default('adcet_development_jwt_access_secret_key_32_chars'),
   JWT_REFRESH_SECRET: z
     .string()
-    .min(16)
+    .min(32, 'JWT_REFRESH_SECRET must be at least 32 characters')
     .default('adcet_development_jwt_refresh_secret_key_32_chars'),
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
-});
+}).refine(
+  (data) => {
+    if (data.NODE_ENV === 'production') {
+      return (
+        data.JWT_ACCESS_SECRET !== 'adcet_development_jwt_access_secret_key_32_chars' &&
+        data.JWT_REFRESH_SECRET !== 'adcet_development_jwt_refresh_secret_key_32_chars'
+      );
+    }
+    return true;
+  },
+  {
+    message: 'FATAL SECURITY: Default development JWT secrets are strictly forbidden in production!',
+  }
+);
 
 const parsed = envSchema.safeParse(process.env);
 
