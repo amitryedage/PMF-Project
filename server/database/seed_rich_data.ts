@@ -1,8 +1,9 @@
 import { client } from '../src/config/db';
 import { hashPassword } from '../src/utils/crypto';
 
-export async function seedRichData() {
-  console.log('Seeding rich, realistic college dataset for ADCET Ashta...');
+export async function seed1200Students() {
+  console.log('Generating complete 1,200 student dataset for ADCET Ashta...');
+  const startTime = Date.now();
 
   await client.execute('PRAGMA foreign_keys = OFF');
 
@@ -11,8 +12,7 @@ export async function seedRichData() {
   // 1. Academic Years
   await client.execute({
     sql: `INSERT OR REPLACE INTO academic_years (id, year_code, is_current, start_date, end_date)
-          VALUES (?, ?, 1, '2026-07-01', '2027-05-31')`,
-    args: ['ay-2026-2027', '2026-2027'],
+          VALUES ('ay-2026-2027', '2026-2027', 1, '2026-07-01', '2027-05-31')`,
   });
 
   // 2. Programs
@@ -29,19 +29,22 @@ export async function seedRichData() {
     });
   }
 
-  // 3. Classes
-  const classes = [
-    ['class-aids-3a', 'prog-ai-ds', 'ay-2026-2027', 3, 5, 'A'],
-    ['class-aids-3b', 'prog-ai-ds', 'ay-2026-2027', 3, 5, 'B'],
-    ['class-aids-4a', 'prog-ai-ds', 'ay-2026-2027', 4, 7, 'A'],
-  ];
+  // 3. Classes (Years 1 to 4, Div A & B for both programs = 16 classes)
+  console.log('Creating classes for all 4 academic years...');
+  const classList: { id: string; progId: string; year: number; div: string }[] = [];
 
-  for (const c of classes) {
-    await client.execute({
-      sql: `INSERT OR REPLACE INTO classes (id, program_id, academic_year_id, year, semester, division)
-            VALUES (?, ?, ?, ?, ?, ?)`,
-      args: c,
-    });
+  for (const p of programs) {
+    for (let yr = 1; yr <= 4; yr++) {
+      for (const div of ['A', 'B']) {
+        const classId = `class-${String(p[1]).toLowerCase()}-y${yr}-${div.toLowerCase()}`;
+        classList.push({ id: classId, progId: p[0] as string, year: yr, div });
+        await client.execute({
+          sql: `INSERT OR REPLACE INTO classes (id, program_id, academic_year_id, year, semester, division)
+                VALUES (?, ?, 'ay-2026-2027', ?, ?, ?)`,
+          args: [classId, p[0], yr, yr * 2 - 1, div],
+        });
+      }
+    }
   }
 
   // 4. Subjects
@@ -50,6 +53,8 @@ export async function seedRichData() {
     ['sub-ai502', 'AI502', 'Deep Learning Architectures', 'prog-ai-ds', 3, 5, 4, 100, 50],
     ['sub-ai503', 'AI503', 'Big Data Engineering & Cloud Systems', 'prog-ai-ds', 3, 5, 3, 100, 25],
     ['sub-ai504', 'AI504', 'Natural Language Processing', 'prog-ai-ds', 3, 5, 3, 100, 25],
+    ['sub-cs501', 'CS501', 'Theory of Computation', 'prog-cse', 3, 5, 4, 100, 50],
+    ['sub-cs502', 'CS502', 'Database Management Systems', 'prog-cse', 3, 5, 4, 100, 50],
   ];
 
   for (const s of subjects) {
@@ -62,226 +67,187 @@ export async function seedRichData() {
 
   // 5. Faculty Staff Accounts
   const facultyUsers = [
-    ['u-fac-01', 'dr.patil@adcet.in', 'EMP-011', 'Dr. S. K. Patil', 'HOD AI & DS'],
-    ['u-fac-02', 'prof.deshmukh@adcet.in', 'EMP-012', 'Prof. P. V. Deshmukh', 'Assistant Professor'],
-    ['u-fac-03', 'prof.kulkarni@adcet.in', 'EMP-013', 'Prof. A. B. Kulkarni', 'Assistant Professor'],
-    ['u-fac-04', 'prof.shinde@adcet.in', 'EMP-014', 'Prof. R. M. Shinde', 'Assistant Professor'],
+    ['u-superadmin', 'superadmin@adcet.in', 'EMP-001', 'SUPER_ADMIN'],
+    ['u-registrar', 'registrar@adcet.in', 'EMP-002', 'ADMIN'],
+    ['u-accounts', 'accounts@adcet.in', 'EMP-003', 'ACCOUNTS'],
+    ['u-fac-01', 'dr.patil@adcet.in', 'EMP-011', 'FACULTY'],
+    ['u-fac-02', 'prof.deshmukh@adcet.in', 'EMP-012', 'FACULTY'],
+    ['u-fac-03', 'prof.kulkarni@adcet.in', 'EMP-013', 'FACULTY'],
+    ['u-fac-04', 'prof.shinde@adcet.in', 'EMP-014', 'FACULTY'],
   ];
 
   for (const f of facultyUsers) {
     await client.execute({
       sql: `INSERT OR REPLACE INTO users (id, email, roll_number, password_hash, role, must_change_password, is_active)
-            VALUES (?, ?, ?, ?, 'FACULTY', 0, 1)`,
-      args: [f[0], f[1], f[2], defaultPasswordHash],
+            VALUES (?, ?, ?, ?, ?, 0, 1)`,
+      args: [f[0], f[1], f[2], defaultPasswordHash, f[3]],
     });
   }
 
-  // 6. Faculty Assignments
-  const assignments = [
-    ['fa-01', 'u-fac-02', 'sub-ai501', 'class-aids-3a'],
-    ['fa-02', 'u-fac-03', 'sub-ai502', 'class-aids-3a'],
-    ['fa-03', 'u-fac-04', 'sub-ai503', 'class-aids-3a'],
-    ['fa-04', 'u-fac-01', 'sub-ai504', 'class-aids-3a'],
-  ];
+  // 6. 1,200 Realistic Indian Students
+  const firstNames = [
+    'Amit', 'Sneha', 'Rohan', 'Tanvi', 'Prathamesh', 'Ananya', 'Yash', 'Riddhi', 'Siddharth', 'Pooja',
+    'Omkar', 'Shruti', 'Aditya', 'Kavya', 'Harshvardhan', 'Neha', 'Digvijay', 'Sakshi', 'Saurabh', 'Isha',
+    'Abhishek', 'Priyanka', 'Sanket', 'Gauri', 'Nikhil', 'Manasi', 'Akshay', 'Sayali', 'Tejas', 'Deepika',
+    'Kunal', 'Ashwini', 'Vishal', 'Swati', 'Suraj', 'Megha', 'Mayur', 'Komal', 'Pranav', 'Ruturaj'
+  ]; // 40 first names
 
-  for (const a of assignments) {
-    await client.execute({
-      sql: `INSERT OR REPLACE INTO faculty_assignments (id, faculty_user_id, subject_id, class_id)
-            VALUES (?, ?, ?, ?)`,
-      args: a,
-    });
-  }
+  const lastNames = [
+    'Yedage', 'Deshmukh', 'Patil', 'Sawant', 'Joshi', 'Shinde', 'Pawar', 'Kadam', 'Mane', 'Jadhav',
+    'Chavan', 'Bhosale', 'More', 'Gaikwad', 'Salunkhe', 'Thorat', 'Mohite', 'Kulkarni', 'Kamble', 'Tambe',
+    'Ghadge', 'Surve', 'Koli', 'Mali', 'Ghatge', 'Sutar', 'Babar', 'Ghorpade', 'Ingale', 'Vhanmane'
+  ]; // 30 last names
 
-  // 7. 20 Realistic Students
-  const studentData = [
-    ['26AIDS001', 'EN260101', 'Amit', 'Yedage', 'अमित येडगे', '2005-04-12', 'MALE', 'A+', 'Ramesh Yedage', '9822011223', 'Father', 'ACTIVE', 'A'],
-    ['26AIDS002', 'EN260102', 'Sneha', 'Deshmukh', 'स्नेहा देशमुख', '2005-06-18', 'FEMALE', 'B+', 'Vijay Deshmukh', '9822011224', 'Father', 'ACTIVE', 'A'],
-    ['26AIDS003', 'EN260103', 'Rohan', 'Patil', 'रोहन पाटील', '2005-01-22', 'MALE', 'O+', 'Sunil Patil', '9822011225', 'Father', 'ACTIVE', 'A'],
-    ['26AIDS004', 'EN260104', 'Tanvi', 'Sawant', 'तन्वी सावंत', '2005-08-09', 'FEMALE', 'A+', 'Mahesh Sawant', '9822011226', 'Father', 'ACTIVE', 'A'],
-    ['26AIDS005', 'EN260105', 'Prathamesh', 'Joshi', 'प्रथमेश जोशी', '2004-11-30', 'MALE', 'B-', 'Anand Joshi', '9822011227', 'Father', 'ACTIVE', 'A'],
-    ['26AIDS006', 'EN260106', 'Ananya', 'Shinde', 'अनन्या शिंदे', '2005-03-14', 'FEMALE', 'O-', 'Dipak Shinde', '9822011228', 'Father', 'ACTIVE', 'A'],
-    ['26AIDS007', 'EN260107', 'Yash', 'Pawar', 'यश पवार', '2005-09-25', 'MALE', 'AB+', 'Sachin Pawar', '9822011229', 'Father', 'DETAINED', 'A'],
-    ['26AIDS008', 'EN260108', 'Riddhi', 'Kadam', 'रिद्धी कदम', '2005-05-19', 'FEMALE', 'A+', 'Ganesh Kadam', '9822011230', 'Father', 'ACTIVE', 'A'],
-    ['26AIDS009', 'EN260109', 'Siddharth', 'Mane', 'सिद्धार्थ माने', '2005-07-07', 'MALE', 'B+', 'Rajendra Mane', '9822011231', 'Father', 'ACTIVE', 'A'],
-    ['26AIDS010', 'EN260110', 'Pooja', 'Jadhav', 'पूजा जाधव', '2005-02-11', 'FEMALE', 'O+', 'Ashok Jadhav', '9822011232', 'Father', 'ACTIVE', 'A'],
-    ['26AIDS011', 'EN260111', 'Omkar', 'Chavan', 'ओंकार चव्हाण', '2004-12-05', 'MALE', 'A+', 'Prakash Chavan', '9822011233', 'Father', 'ACTIVE', 'B'],
-    ['26AIDS012', 'EN260112', 'Shruti', 'Bhosale', 'श्रुती भोसले', '2005-10-16', 'FEMALE', 'B+', 'Suresh Bhosale', '9822011234', 'Father', 'ACTIVE', 'B'],
-    ['26AIDS013', 'EN260113', 'Aditya', 'More', 'आदित्य मोरे', '2005-04-29', 'MALE', 'O+', 'Nitin More', '9822011235', 'Father', 'ACTIVE', 'B'],
-    ['26AIDS014', 'EN260114', 'Kavya', 'Gaikwad', 'काव्या गायकवाड', '2005-08-21', 'FEMALE', 'A-', 'Vikas Gaikwad', '9822011236', 'Father', 'ACTIVE', 'B'],
-    ['26AIDS015', 'EN260115', 'Harshvardhan', 'Salunkhe', 'हर्षवर्धन साळुंखे', '2005-01-15', 'MALE', 'B+', 'Ajit Salunkhe', '9822011237', 'Father', 'ACTIVE', 'B'],
-    ['26AIDS016', 'EN260116', 'Neha', 'Thorat', 'नेहा थोरात', '2005-06-03', 'FEMALE', 'O+', 'Sanjay Thorat', '9822011238', 'Father', 'ON_LEAVE', 'B'],
-    ['26AIDS017', 'EN260117', 'Digvijay', 'Mohite', 'दिग्विजय मोहिते', '2004-10-28', 'MALE', 'A+', 'Hanmant Mohite', '9822011239', 'Father', 'ACTIVE', 'B'],
-    ['26AIDS018', 'EN260118', 'Sakshi', 'Kulkarni', 'साक्षी कुलकर्णी', '2005-07-22', 'FEMALE', 'AB+', 'Milind Kulkarni', '9822011240', 'Father', 'ACTIVE', 'B'],
-    ['26AIDS019', 'EN260119', 'Saurabh', 'Kamble', 'सौरभ कांबळे', '2005-03-31', 'MALE', 'B-', 'Arun Kamble', '9822011241', 'Father', 'ACTIVE', 'B'],
-    ['26AIDS020', 'EN260120', 'Isha', 'Tambe', 'ईशा तांबे', '2005-11-12', 'FEMALE', 'O+', 'Shrikant Tambe', '9822011242', 'Father', 'ACTIVE', 'B'],
-  ];
+  const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
 
-  const studentIds: string[] = [];
+  console.log('Inserting 1,200 students into database...');
 
-  for (let i = 0; i < studentData.length; i++) {
-    const s = studentData[i];
-    const userId = `u-stud-${i + 1}`;
-    const studentId = `s-stud-${i + 1}`;
-    studentIds.push(studentId);
+  // Use a transactional batch to ensure near-instant write performance
+  const tx = await client.transaction('write');
 
-    const email = `${s[0].toLowerCase()}@adcet.in`;
+  let studentIndex = 0;
 
-    await client.execute({
-      sql: `INSERT OR REPLACE INTO users (id, email, roll_number, password_hash, role, must_change_password, is_active)
-            VALUES (?, ?, ?, ?, 'STUDENT', 0, 1)`,
-      args: [userId, email, s[0], defaultPasswordHash],
-    });
+  for (let f = 0; f < firstNames.length; f++) {
+    for (let l = 0; l < lastNames.length; l++) {
+      studentIndex++; // 1 to 1200
 
-    await client.execute({
-      sql: `INSERT OR REPLACE INTO students (
-              id, user_id, roll_number, enrollment_number, first_name, last_name, full_name_marathi,
-              dob, gender, blood_group, personal_email, phone, guardian_name, guardian_phone,
-              guardian_relation, guardian_consent_recorded, program_id, current_year,
-              current_division, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'prog-ai-ds', 3, ?, ?)`,
-      args: [
-        studentId,
-        userId,
-        s[0],
-        s[1],
-        s[2],
-        s[3],
-        s[4],
-        s[5],
-        s[6],
-        s[7],
-        `${s[2].toLowerCase()}.${s[3].toLowerCase()}@gmail.com`,
-        `98${Math.floor(10000000 + Math.random() * 90000000)}`,
-        s[8],
-        s[9],
-        s[10],
-        s[12],
-        s[11],
-      ],
-    });
+      const firstName = firstNames[f];
+      const lastName = lastNames[l];
+      const gender = (f % 2 === 0) ? 'MALE' : 'FEMALE';
+      const bloodGroup = bloodGroups[(f + l) % bloodGroups.length];
 
-    const classId = s[12] === 'A' ? 'class-aids-3a' : 'class-aids-3b';
-    await client.execute({
-      sql: `INSERT OR REPLACE INTO class_enrollments (id, class_id, student_id, roll_in_class)
-            VALUES (?, ?, ?, ?)`,
-      args: [`ce-${i + 1}`, classId, studentId, i + 1],
-    });
-  }
+      // Assign program: first 600 AI-DS, next 600 CSE
+      const isAiDs = studentIndex <= 600;
+      const progCode = isAiDs ? 'AIDS' : 'CSE';
+      const progId = isAiDs ? 'prog-ai-ds' : 'prog-cse';
 
-  // 8. Attendance Sessions & Records (10 sessions across subjects)
-  console.log('Seeding attendance sessions and records...');
-  for (let sIdx = 1; sIdx <= 8; sIdx++) {
-    const sessionId = `att-sess-${sIdx}`;
-    const faId = assignments[(sIdx - 1) % assignments.length][0];
-    const sessionDate = `2026-10-${String(sIdx + 5).padStart(2, '0')}`;
+      // Assign academic year (1 to 4) - 150 students per year per department
+      const progStudentIdx = isAiDs ? studentIndex : studentIndex - 600;
+      const currentYear = Math.min(4, Math.floor((progStudentIdx - 1) / 150) + 1);
 
-    await client.execute({
-      sql: `INSERT OR REPLACE INTO attendance_sessions (id, faculty_assignment_id, session_date, session_hour, topic, version)
-            VALUES (?, ?, ?, ?, ?, 1)`,
-      args: [sessionId, faId, sessionDate, ((sIdx - 1) % 4) + 1, `Lecture ${sIdx}: Practical Implementation`],
-    });
+      // Assign division (A or B) - 75 students per division
+      const yearStudentIdx = ((progStudentIdx - 1) % 150) + 1;
+      const currentDivision = yearStudentIdx <= 75 ? 'A' : 'B';
 
-    for (let stIdx = 0; stIdx < studentIds.length; stIdx++) {
-      const studentId = studentIds[stIdx];
-      // Simulate defaulter for student 7 and 9, high attendance for others
-      let status = 'PRESENT';
-      if (stIdx === 6) status = sIdx % 2 === 0 ? 'ABSENT' : 'PRESENT'; // 50%
-      else if (stIdx === 8) status = sIdx % 3 === 0 ? 'ABSENT' : 'PRESENT'; // 66%
-      else if (Math.random() < 0.1) status = 'ABSENT';
+      // Year prefix: 26 (First Year), 25 (Second Year), 24 (Third Year), 23 (Final Year)
+      const yearPrefix = 27 - currentYear;
+      const rollNumber = `${yearPrefix}${progCode}${String(yearStudentIdx).padStart(3, '0')}`;
+      const enrollmentNumber = `EN${yearPrefix}${progCode}${String(yearStudentIdx).padStart(4, '0')}`;
 
-      await client.execute({
-        sql: `INSERT OR REPLACE INTO attendance_records (id, session_id, student_id, status)
-              VALUES (?, ?, ?, ?)`,
-        args: [`ar-${sIdx}-${stIdx}`, sessionId, studentId, status],
+      const userId = `u-stud-${studentIndex}`;
+      const studentId = `s-stud-${studentIndex}`;
+      const email = `${rollNumber.toLowerCase()}@adcet.in`;
+
+      // Status variation: 98% ACTIVE, 1% DETAINED, 1% ON_LEAVE
+      let status = 'ACTIVE';
+      if (studentIndex % 85 === 0) status = 'DETAINED';
+      else if (studentIndex % 115 === 0) status = 'ON_LEAVE';
+
+      // Insert User
+      await tx.execute({
+        sql: `INSERT OR REPLACE INTO users (id, email, roll_number, password_hash, role, must_change_password, is_active)
+              VALUES (?, ?, ?, ?, 'STUDENT', 0, 1)`,
+        args: [userId, email, rollNumber, defaultPasswordHash],
       });
+
+      // Insert Student
+      const birthYear = 2008 - currentYear;
+      const dob = `${birthYear}-${String((f % 12) + 1).padStart(2, '0')}-${String((l % 28) + 1).padStart(2, '0')}`;
+      const guardianName = `Mr. Ramesh ${lastName}`;
+      const guardianPhone = `9822${String(100000 + studentIndex).slice(0, 6)}`;
+
+      await tx.execute({
+        sql: `INSERT OR REPLACE INTO students (
+                id, user_id, roll_number, enrollment_number, first_name, last_name,
+                dob, gender, blood_group, personal_email, phone, guardian_name, guardian_phone,
+                guardian_relation, guardian_consent_recorded, program_id, current_year,
+                current_division, status
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Father', 1, ?, ?, ?, ?)`,
+        args: [
+          studentId,
+          userId,
+          rollNumber,
+          enrollmentNumber,
+          firstName,
+          lastName,
+          dob,
+          gender,
+          bloodGroup,
+          `${firstName.toLowerCase()}.${lastName.toLowerCase()}@gmail.com`,
+          `98${String(10000000 + studentIndex).slice(0, 8)}`,
+          guardianName,
+          guardianPhone,
+          progId,
+          currentYear,
+          currentDivision,
+          status,
+        ],
+      });
+
+      // Enroll in corresponding Class
+      const targetClass = classList.find(
+        (c) => c.progId === progId && c.year === currentYear && c.div === currentDivision
+      );
+      if (targetClass) {
+        await tx.execute({
+          sql: `INSERT OR REPLACE INTO class_enrollments (id, class_id, student_id, roll_in_class)
+                VALUES (?, ?, ?, ?)`,
+          args: [`ce-${studentIndex}`, targetClass.id, studentId, yearStudentIdx],
+        });
+      }
+
+      // 7. Fee Ledger Entries (Annual tuition: ₹85,000 = 8500000 paise)
+      await tx.execute({
+        sql: `INSERT OR REPLACE INTO fee_ledger_entries (
+                id, student_id, financial_year, entry_type, amount_paise, payment_mode, notes, created_by_user_id
+              ) VALUES (?, ?, '2026-2027', 'CHARGE', 8500000, 'ANNUAL_FEE', 'Annual Tuition & Development Fee', 'u-accounts')`,
+        args: [`fle-chg-${studentIndex}`, studentId],
+      });
+
+      // Realistic payment distribution:
+      // ~70% Fully Paid (2 installments)
+      // ~20% Part Paid (1 installment)
+      // ~10% Unpaid Defaulters
+      if (studentIndex % 10 <= 6) {
+        // Fully Paid
+        await tx.execute({
+          sql: `INSERT OR REPLACE INTO fee_ledger_entries (
+                  id, student_id, financial_year, entry_type, amount_paise, receipt_number, payment_mode, notes, created_by_user_id
+                ) VALUES (?, ?, '2026-2027', 'PAYMENT', 4250000, ?, 'UPI', '1st Term Installment', 'u-accounts')`,
+          args: [`fle-p1-${studentIndex}`, studentId, studentIndex * 2],
+        });
+        await tx.execute({
+          sql: `INSERT OR REPLACE INTO fee_ledger_entries (
+                  id, student_id, financial_year, entry_type, amount_paise, receipt_number, payment_mode, notes, created_by_user_id
+                ) VALUES (?, ?, '2026-2027', 'PAYMENT', 4250000, ?, 'NEFT_RTGS', '2nd Term Installment', 'u-accounts')`,
+          args: [`fle-p2-${studentIndex}`, studentId, studentIndex * 2 + 1],
+        });
+      } else if (studentIndex % 10 <= 8) {
+        // Part Paid
+        await tx.execute({
+          sql: `INSERT OR REPLACE INTO fee_ledger_entries (
+                  id, student_id, financial_year, entry_type, amount_paise, receipt_number, payment_mode, notes, created_by_user_id
+                ) VALUES (?, ?, '2026-2027', 'PAYMENT', 4250000, ?, 'CHEQUE', 'Part Payment Cleared', 'u-accounts')`,
+          args: [`fle-p1-${studentIndex}`, studentId, studentIndex * 2],
+        });
+      }
+      // Remaining 10% have balance of ₹85,000 for Defaulter exports!
     }
   }
 
-  // 9. Exams and Marks
-  console.log('Seeding exams and grade marks...');
-  const exams = [
-    ['exam-01', 'class-aids-3a', 'sub-ai501', 'Mid-Term Exam', 'MID_TERM', 50, '2026-09-20', 1, '2026-09-25'],
-    ['exam-02', 'class-aids-3a', 'sub-ai502', 'Mid-Term Exam', 'MID_TERM', 50, '2026-09-22', 1, '2026-09-25'],
-    ['exam-03', 'class-aids-3a', 'sub-ai503', 'Mid-Term Exam', 'MID_TERM', 50, '2026-09-24', 1, '2026-09-25'],
-    ['exam-04', 'class-aids-3a', 'sub-ai504', 'Mid-Term Exam', 'MID_TERM', 50, '2026-09-26', 1, '2026-09-25'],
-  ];
+  await tx.commit();
 
-  for (const ex of exams) {
-    await client.execute({
-      sql: `INSERT OR REPLACE INTO exams (id, class_id, subject_id, name, exam_type, max_marks, exam_date, is_published, published_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: ex,
-    });
-
-    for (let stIdx = 0; stIdx < 10; stIdx++) {
-      const studentId = studentIds[stIdx];
-      const baseScore = 32 + (stIdx % 15);
-      const score = Math.min(48, Math.max(18, baseScore));
-
-      await client.execute({
-        sql: `INSERT OR REPLACE INTO marks (id, exam_id, student_id, score, is_absent, remarks, version)
-              VALUES (?, ?, ?, ?, 0, 'Good comprehension', 1)`,
-        args: [`mk-${ex[0]}-${stIdx}`, ex[0], studentId, score],
-      });
-    }
-  }
-
-  // 10. Fee Structures and Ledgers
-  console.log('Seeding fee structures and ledger receipts...');
-  await client.execute({
-    sql: `INSERT OR REPLACE INTO fee_structures (id, program_id, academic_year_id, year, category, total_amount_paise)
-          VALUES ('fee-aids-y3', 'prog-ai-ds', 'ay-2026-2027', 3, 'OPEN', 8500000)`,
-  });
-
-  for (let stIdx = 0; stIdx < studentIds.length; stIdx++) {
-    const studentId = studentIds[stIdx];
-    const receiptNum = stIdx + 1;
-
-    // First: Charge of 85,000 INR
-    await client.execute({
-      sql: `INSERT OR REPLACE INTO fee_ledger_entries (
-              id, student_id, financial_year, entry_type, amount_paise, payment_mode, notes, created_by_user_id
-            ) VALUES (?, ?, '2026-2027', 'CHARGE', 8500000, 'ANNUAL_FEE', 'Annual Tuition & Development Fee', 'u-accounts')`,
-      args: [`fle-chg-${stIdx}`, studentId],
-    });
-
-    // Payment variation: Fully paid vs 50% paid vs Defaulter (0 paid)
-    if (stIdx < 12) {
-      // 100% Paid (2 installments of 42,500)
-      await client.execute({
-        sql: `INSERT OR REPLACE INTO fee_ledger_entries (
-                id, student_id, financial_year, entry_type, amount_paise, receipt_number, payment_mode, notes, created_by_user_id
-              ) VALUES (?, ?, '2026-2027', 'PAYMENT', 4250000, ?, 'UPI', '1st Term Installment', 'u-accounts')`,
-        args: [`fle-pay1-${stIdx}`, studentId, receiptNum * 2],
-      });
-      await client.execute({
-        sql: `INSERT OR REPLACE INTO fee_ledger_entries (
-                id, student_id, financial_year, entry_type, amount_paise, receipt_number, payment_mode, notes, created_by_user_id
-              ) VALUES (?, ?, '2026-2027', 'PAYMENT', 4250000, ?, 'NEFT_RTGS', '2nd Term Installment', 'u-accounts')`,
-        args: [`fle-pay2-${stIdx}`, studentId, receiptNum * 2 + 1],
-      });
-    } else if (stIdx < 17) {
-      // 50% Paid (42,500 pending)
-      await client.execute({
-        sql: `INSERT OR REPLACE INTO fee_ledger_entries (
-                id, student_id, financial_year, entry_type, amount_paise, receipt_number, payment_mode, notes, created_by_user_id
-              ) VALUES (?, ?, '2026-2027', 'PAYMENT', 4250000, ?, 'CHEQUE', 'Part Payment Cleared', 'u-accounts')`,
-        args: [`fle-pay1-${stIdx}`, studentId, receiptNum * 2],
-      });
-    }
-    // stIdx >= 17 are 100% defaulters (0 paid, 85,000 balance) for testing defaulters export!
-  }
-
-  // Update receipt sequence counter
+  // 8. Update receipt sequence
   await client.execute({
     sql: `INSERT OR REPLACE INTO receipt_sequences (financial_year, last_receipt_number)
-          VALUES ('2026-2027', 150)`,
+          VALUES ('2026-2027', 2500)`,
   });
 
-  console.log('✅ Rich demo dataset seeded successfully!');
+  const durationSec = ((Date.now() - startTime) / 1000).toFixed(2);
+  console.log(`✅ Successfully seeded exactly 1,200 students across 4 academic years in ${durationSec}s!`);
 }
 
-seedRichData().catch((err) => {
-  console.error('Failed to seed rich dataset:', err);
+seed1200Students().catch((err) => {
+  console.error('Failed to seed 1200 students:', err);
   process.exit(1);
 });
