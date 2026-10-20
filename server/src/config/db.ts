@@ -19,7 +19,7 @@ export const query = async <T = any>(
   params?: any[]
 ): Promise<QueryResult<T>> => {
   let normalizedSql = text;
-  let args = params ? [...params] : [];
+  let args = (params || []).map((p) => (p === undefined ? null : p));
 
   if (/get_next_receipt_number/i.test(normalizedSql)) {
     const fy = args[0];

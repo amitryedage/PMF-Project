@@ -6,8 +6,10 @@ import { CreateStudentInput, UpdateStudentInput, StudentQueryParams } from './st
 
 export class StudentService {
   async listStudents(params: StudentQueryParams) {
-    const { page, limit, search, programId, year, division, status } = params;
+    const page = Number(params?.page) || 1;
+    const limit = Math.min(100, Math.max(1, Number(params?.limit) || 25));
     const offset = (page - 1) * limit;
+    const { search, programId, year, division, status } = params || {};
 
     const conditions: string[] = ['s.deleted_at IS NULL'];
     const values: any[] = [];
