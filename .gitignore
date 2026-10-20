@@ -17,3 +17,6 @@ coverage/
 powershell.cmd
 PRD - Cloud-Based Student Record System.md
 *PRD*.md
+*.db
+*.db-journal
+student_records.db*
