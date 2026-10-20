@@ -7,6 +7,7 @@ import { checkDatabaseHealth } from './config/db';
 import { sendSuccess, sendError } from './utils/response';
 import { errorHandler } from './middlewares/error.middleware';
 import authRoutes from './modules/auth/auth.routes';
+import studentRoutes from './modules/students/student.routes';
 
 export const createApp = (): Application => {
   const app = express();
@@ -32,6 +33,7 @@ export const createApp = (): Application => {
   });
 
   app.use('/api/v1/auth', authRoutes);
+  app.use('/api/v1/students', studentRoutes);
 
   app.use((_req: Request, res: Response) => {
     return sendError(res, 'Route not found', 404);
