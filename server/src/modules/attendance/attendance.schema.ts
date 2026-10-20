@@ -9,7 +9,7 @@ const attendanceStatusEnum = z.enum([
 
 export const createSessionSchema = z.object({
   body: z.object({
-    facultyAssignmentId: z.string().uuid('Valid faculty assignment ID is required'),
+    facultyAssignmentId: z.string().min(1, 'Valid faculty assignment ID is required'),
     sessionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
     sessionHour: z.number().int().min(1).max(10),
     topic: z.string().max(255).optional(),
@@ -17,13 +17,13 @@ export const createSessionSchema = z.object({
 });
 
 export const recordAttendanceItemSchema = z.object({
-  studentId: z.string().uuid('Valid student ID is required'),
+  studentId: z.string().min(1, 'Valid student ID is required'),
   status: attendanceStatusEnum,
 });
 
 export const submitBulkAttendanceSchema = z.object({
   body: z.object({
-    sessionId: z.string().uuid('Valid session ID is required'),
+    sessionId: z.string().min(1, 'Valid session ID is required'),
     records: z.array(recordAttendanceItemSchema).min(1, 'At least one student record is required'),
   }),
 });
