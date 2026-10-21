@@ -10,6 +10,8 @@ const envSchema = z.object({
   DATABASE_URL: z
     .string()
     .default('postgresql://postgres:postgres@localhost:5432/student_records'),
+  TURSO_DATABASE_URL: z.string().optional(),
+  TURSO_AUTH_TOKEN: z.string().optional(),
   JWT_ACCESS_SECRET: z
     .string()
     .min(32, 'JWT_ACCESS_SECRET must be at least 32 characters')

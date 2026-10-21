@@ -2,11 +2,15 @@ import { createClient, Client } from '@libsql/client';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { env } from './env';
 
-const DB_FILE = path.resolve(process.cwd(), 'student_records.db');
+const DB_FILE = fs.existsSync(path.resolve(__dirname, '../../student_records.db'))
+  ? path.resolve(__dirname, '../../student_records.db')
+  : path.resolve(process.cwd(), 'student_records.db');
 
 export const client: Client = createClient({
-  url: `file:${DB_FILE}`,
+  url: env.TURSO_DATABASE_URL || `file:${DB_FILE}`,
+  authToken: env.TURSO_AUTH_TOKEN || undefined,
 });
 
 export interface QueryResult<T = any> {
