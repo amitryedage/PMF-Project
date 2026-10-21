@@ -46,7 +46,16 @@ export const query = async <T = any>(
     .replace(/\bNOW\(\)/gi, "datetime('now')")
     .replace(/::(int|bigint|numeric)/gi, '');
 
-  normalizedSql = normalizedSql.replace(/\$(\d+)/g, '?');
+  if (/\$\d+/.test(normalizedSql)) {
+    const originalParams = [...args];
+    const newArgs: any[] = [];
+    normalizedSql = normalizedSql.replace(/\$(\d+)/g, (_, idx) => {
+      const index = parseInt(idx, 10) - 1;
+      newArgs.push(originalParams[index] !== undefined ? originalParams[index] : null);
+      return '?';
+    });
+    args = newArgs;
+  }
 
   if (/^\s*INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES/i.test(normalizedSql)) {
     const match = normalizedSql.match(/^\s*INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)(.*)$/i);

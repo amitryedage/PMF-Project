@@ -210,7 +210,9 @@ export class ReportService {
   }
 
   async getAuditLogs(params: AuditLogQuery) {
-    const { actorUserId, action, entityType, page, limit } = params;
+    const { actorUserId, action, entityType } = params;
+    const page = Math.max(1, Number(params.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(params.limit) || 25));
     const offset = (page - 1) * limit;
 
     const conditions: string[] = [];
