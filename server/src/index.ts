@@ -3,12 +3,15 @@ import { env } from './config/env';
 import { pool, initSqliteDatabase } from './config/db';
 
 const startServer = async () => {
-  await initSqliteDatabase();
+  if (!env.TURSO_DATABASE_URL) {
+    await initSqliteDatabase();
+  }
 
   const app = createApp();
 
   const server = app.listen(env.PORT, () => {
-    console.log(`Server listening on port ${env.PORT} in ${env.NODE_ENV} mode (SQLite local database ready)`);
+    const dbSource = env.TURSO_DATABASE_URL ? 'Turso Cloud Serverless libSQL' : 'SQLite local database';
+    console.log(`Server listening on port ${env.PORT} in ${env.NODE_ENV} mode (${dbSource} ready)`);
   });
 
   const handleShutdown = async (signal: string) => {
